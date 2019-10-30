@@ -61,7 +61,7 @@ print('b) Simulate 1000 days of new ATM')
 
 
 seconds_in_hour = 3600
-day_in_seconds = 86400
+day_in_seconds = 24 * seconds_in_hour
 thousand_days_in_seconds = 1000 * day_in_seconds
 arrival_timestamps = [np.random.exponential(scale=180)]
 while arrival_timestamps[-1] < thousand_days_in_seconds:
