@@ -7,6 +7,7 @@ import matplotlib.patches as mpatches
 
 
 print('Exercise 1')
+print('')
 
 
 ################################################################################

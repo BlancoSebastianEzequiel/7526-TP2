@@ -1,0 +1,10 @@
+Exercise 1
+
+a) Run Kolmogorov-Smirnov test to determine distribution of time between client arrivals
+    Exponential distribution with scale of 180 seconds accepted
+    Exponential distribution with scale of 240 seconds discarded
+b) Simulate 1000 days of new ATM
+c) Graph banknotes in ATM in the first day
+d) Mean wait + usage time: 15.2 minutes
+e) Compare to current ATM (current failure rate: 20%)
+    ATM should be changed since new failure rate is 5.8%
