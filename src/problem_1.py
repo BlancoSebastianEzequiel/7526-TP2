@@ -52,6 +52,7 @@ def kolmogorov_smirnov_test(scale):
 kolmogorov_smirnov_test(scale=180)
 kolmogorov_smirnov_test(scale=240)
 
+
 ################################################################################
 #                                Exercise 1) b)                                #
 ################################################################################
@@ -63,9 +64,13 @@ print('b) Simulate 1000 days of new ATM')
 seconds_in_hour = 3600
 day_in_seconds = 24 * seconds_in_hour
 thousand_days_in_seconds = 1000 * day_in_seconds
-arrival_timestamps = [np.random.exponential(scale=180)]
-while arrival_timestamps[-1] < thousand_days_in_seconds:
-    arrival_timestamps.append(arrival_timestamps[-1] + np.random.exponential(scale=180))
+
+accepted_scale = 180
+arrival_timestamps = []
+last_arrival = 0
+while last_arrival < thousand_days_in_seconds:
+    last_arrival += np.random.exponential(scale=accepted_scale)
+    arrival_timestamps.append(last_arrival)
 
 max_banknote_count = 2000
 balance = 0
@@ -73,21 +78,21 @@ next_available_timestamp = 0
 
 successful_operations = []
 unsuccessful_operations = []
-log_operations = True
-next_day = 0
+is_first_day = True
+next_day_timestamp = 0
 
 total_client_time = 0
 client_count = 0
 success_count = 0
 
 for arrival in arrival_timestamps:
-    if next_available_timestamp > day_in_seconds:
-        log_operations = False
     if next_available_timestamp > thousand_days_in_seconds:
         break
-    if arrival > next_day:
+    if next_available_timestamp > day_in_seconds:
+        is_first_day = False
+    if arrival > next_day_timestamp:
         balance = max_banknote_count
-        next_day += day_in_seconds
+        next_day_timestamp += day_in_seconds
 
     if random.random() < 0.25:
         duration = np.random.exponential(scale=300)
@@ -95,19 +100,22 @@ for arrival in arrival_timestamps:
     else:
         duration = np.random.exponential(scale=90)
         amount = -(3 + random.random() * 47)
-    wait_time = -max(0, next_available_timestamp - arrival)
-    new_balance = balance + amount
+
+    wait_time = max(0, next_available_timestamp - arrival)
     next_available_timestamp = arrival + wait_time + duration
     total_client_time += wait_time + duration
     client_count += 1
+
+    new_balance = balance + amount
     if 0 <= new_balance <= max_banknote_count:
         balance = new_balance
         success_count += 1
-        if log_operations:
+        if is_first_day:
             successful_operations.append((next_available_timestamp, balance))
     else:
-        if log_operations:
+        if is_first_day:
             unsuccessful_operations.append((next_available_timestamp, balance))
+
 
 ################################################################################
 #                                Exercise 1) c)                                #
@@ -131,12 +139,13 @@ blue_patch = mpatches.Patch(color='blue', label='Successful operation')
 red_patch = mpatches.Patch(color='red', label='Unsuccessful operation')
 plt.legend(handles=[blue_patch, red_patch])
 
+
 ################################################################################
 #                                Exercise 1) d)                                #
 ################################################################################
 
 
-print(f'd) Mean wait + usage time: {total_client_time / client_count:.1f} minutes')
+print(f'd) Mean wait + usage time: {total_client_time / client_count / 60:.1f} minutes')
 
 
 ################################################################################
@@ -155,5 +164,6 @@ if new_failure_percentage < current_failure_percentage:
 else:
     conclusion = 'ATM should not be changed'
 print(f'    {conclusion} since new failure rate is {new_failure_percentage:.1f}%')
+
 
 plt.show()
