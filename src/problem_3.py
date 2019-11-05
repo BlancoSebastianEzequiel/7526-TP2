@@ -34,7 +34,7 @@ def plot_price_coweb_simulation(a,b,c,d,seed, iterations):
     price_t = []
     next_price_t = []
     current = seed
-    for i in range(1, iterations):
+    for i in range(iterations):
         #store Pt
         price_t.append(current)
         #store Pt+1
@@ -45,7 +45,7 @@ def plot_price_coweb_simulation(a,b,c,d,seed, iterations):
     #plot (x, x) starting from seed
     plt.plot(price_t, price_t, 'g')
     #plot (x, f(y)) starting from seed
-    plt.plot(next_price_t, next_price_t, 'b')
+    plt.plot(price_t, next_price_t, 'b')
 
 
     #Iteration plot
