@@ -6,18 +6,27 @@ class baseApi:
     def  __init__(self, env):
        self.env= env
 
-    def makeRequest(self):
+    def makeRequest(self, actualUsers):
         yield self.env.timeout(exponential(scale=(0.8)))
 
 class dualBaseApi:
     def  __init__(self, env):
        self.env= env
+       self.last = 0
 
-    def makeRequest(self):
-        if randint(0, 100) < 60 :
+    def makeRequest(self, actualUsers):
+        if self.pickFirst:
+            self.last = 1
             yield self.env.timeout(exponential(scale=(0.7)))
         else:
+            self.last = 2
             yield self.env.timeout(exponential(scale=(1)))
+    
+    def pickFirst(self, actualUsers):
+        if actualUsers == 0:
+            return randint(0, 100) < 60
+        else:
+            return self.last == 2
 
 class webService: 
     def __init__(self, env, dataBase, baseApi, times_til_process, times_til_request):
@@ -36,7 +45,7 @@ class webService:
             times_til_request.append(self.env.now - time_start)
 
             # Hago la request a la base
-            request_base = self.env.process(baseApi.makeRequest())
+            request_base = self.env.process(baseApi.makeRequest(dataBase.count))
             yield request_base
             times_til_process.append(self.env.now - time_start)
 
@@ -54,7 +63,7 @@ def dataBaseOption(option, env):
 
 def runSimulation(option, consultas=1):
     env = simpy.Environment()
-    dataBase = simpy.Resource(env, capacity=1)
+    dataBase = simpy.Resource(env, capacity=option)
     dataBaseApi = dataBaseOption(option, env)
     times_til_process = []
     times_til_request = []
