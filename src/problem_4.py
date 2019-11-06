@@ -3,51 +3,61 @@ from random import randint
 from numpy.random import exponential
 
 class baseApi:
-    def  __init__(self, env):
+    def  __init__(self, env, dataBase):
        self.env= env
+       self.dataBase = dataBase
 
-    def makeRequest(self, actualUsers):
-        yield self.env.timeout(exponential(scale=(0.8)))
+    def makeRequest(self, times_til_request, time_start):
+        with self.dataBase.request() as req:
+            yield req
+            times_til_request.append(self.env.now - time_start)
+            # Esta liberado el recurso de la api a la base de datos y lo uso
+
+            yield self.env.timeout(exponential(scale=(0.8)))
 
 class dualBaseApi:
-    last = 0
-    def  __init__(self, env):
+    def  __init__(self, env, dataBase1, dataBase2):
        self.env= env
+       self.dataBase1 = dataBase1
+       self.dataBase2 = dataBase2
 
-    def makeRequest(self, actualUsers):
-        if self.pickFirst:
-            self.last = 1
-            yield self.env.timeout(exponential(scale=(0.7)))
+    def makeRequest(self, times_til_request, time_start):
+        if self.pickFirst():
+            with self.dataBase1.request() as req:
+                yield req
+                times_til_request.append(self.env.now - time_start)
+
+                # Esta liberado el recurso de la api a la base de datos y lo uso
+
+                yield self.env.timeout(exponential(scale=(0.7)))
         else:
-            self.last = 2
-            yield self.env.timeout(exponential(scale=(1)))
+            with self.dataBase2.request() as req:
+                yield req
+                times_til_request.append(self.env.now - time_start)
+                # Esta liberado el recurso de la api a la base de datos y lo uso
+
+                yield self.env.timeout(exponential(scale=(1)))
     
-    def pickFirst(self, actualUsers):
-        if actualUsers == 0:
+    def pickFirst(self):
+        if self.dataBase1.count == 0 and self.dataBase2.count == 0:
             return randint(0, 100) < 60
         else:
-            return self.last == 2
+            return self.dataBase1.count == 0
 
 class webService: 
-    def __init__(self, env, dataBase, baseApi, times_til_process, times_til_request):
+    def __init__(self, env, baseApi, times_til_process, times_til_request):
         self.env = env
-        self.web_service_process = env.process(self.start(dataBase, baseApi, times_til_process, times_til_request))
+        self.web_service_process = env.process(self.start(baseApi, times_til_process, times_til_request))
 
-    def start(self, dataBase , baseApi, times_til_process, times_til_request):
+    def start(self, baseApi, times_til_process, times_til_request):
         # Llega la consulta al webService
         yield self.env.process(self.request())
         time_start = self.env.now
-        
 
-        with dataBase.request() as req:
-            yield req
-            # Esta liberado el recurso de la api a la base de datos y lo uso
-            times_til_request.append(self.env.now - time_start)
-
-            # Hago la request a la base
-            request_base = self.env.process(baseApi.makeRequest(dataBase.count))
-            yield request_base
-            times_til_process.append(self.env.now - time_start)
+        # Hago la request a la base
+        request_base = self.env.process(baseApi.makeRequest(times_til_request, time_start))
+        yield request_base
+        times_til_process.append(self.env.now - time_start)
 
     def request(self):
         yield self.env.timeout(exponential(scale=(4)))
@@ -55,20 +65,22 @@ class webService:
 
 
 def dataBaseOption(option, env):
-    if dataBaseOption == 1:
-        return baseApi(env)
+    if option == 1:
+        dataBase = simpy.Resource(env, capacity=1)
+        return baseApi(env, dataBase)
     else:
-        return dualBaseApi(env)
+        dataBase1 = simpy.Resource(env, capacity=1)
+        dataBase2 = simpy.Resource(env, capacity=1)
+        return dualBaseApi(env, dataBase1, dataBase2)
 
 
 def runSimulation(option, consultas=1):
     env = simpy.Environment()
-    dataBase = simpy.Resource(env, capacity=option)
     dataBaseApi = dataBaseOption(option, env)
     times_til_process = []
     times_til_request = []
     for i in range(0, consultas):
-        webService(env, dataBase, dataBaseApi, times_til_process, times_til_request)
+        webService(env, dataBaseApi, times_til_process, times_til_request)
         
     env.run()
 
