@@ -10,9 +10,9 @@ class baseApi:
         yield self.env.timeout(exponential(scale=(0.8)))
 
 class dualBaseApi:
+    last = 0
     def  __init__(self, env):
        self.env= env
-       self.last = 0
 
     def makeRequest(self, actualUsers):
         if self.pickFirst:
