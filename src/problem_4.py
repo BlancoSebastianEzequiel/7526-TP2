@@ -39,7 +39,8 @@ class dualBaseApi:
                 yield self.env.timeout(exponential(scale=(1)))
     
     def pickFirst(self):
-        if self.dataBase1.count == 0 and self.dataBase2.count == 0:
+        if (self.dataBase1.count == 0 and self.dataBase2.count == 0 or 
+         self.dataBase1.count == 1 and self.dataBase2.count == 1):
             return randint(0, 100) < 60
         else:
             return self.dataBase1.count == 0
